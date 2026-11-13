@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Arthimitism RNG</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0a0a14;
+  color: #e0e0e0;
+  font-family: 'Consolas', monospace;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+h1 {
+  font-size: 28px;
+  color: #7c5cff;
+  margin-bottom: 5px;
+  letter-spacing: 2px;
+}
+.subtitle {
+  color: #666;
+  font-size: 12px;
+  margin-bottom: 30px;
+}
+.number-display {
+  font-size: 72px;
+  font-weight: bold;
+  color: #fff;
+  margin: 20px 0;
+  text-shadow: 0 0 20px rgba(124, 92, 255, 0.5);
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rarity {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  padding: 8px 20px;
+  border-radius: 8px;
+  display: inline-block;
+}
+.roll-btn {
+  background: #7c5cff;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 16px 48px;
+  font-size: 20px;
+  font-family: 'Consolas', monospace;
+  cursor: pointer;
+  font-weight: bold;
+  letter-spacing: 2px;
+  transition: all 0.2s;
+  margin-bottom: 30px;
+}
+.roll-btn:hover { background: #6a4ce0; transform: scale(1.05); }
+.roll-btn:active { transform: scale(0.98); }
+.roll-btn:disabled { background: #333; cursor: not-allowed; transform: none; }
+
+.properties {
+  width: 100%;
+  max-width: 600px;
+  margin-bottom: 20px;
+}
+.prop-section {
+  margin-bottom: 15px;
+}
+.prop-title {
+  font-size: 13px;
+  color: #7c5cff;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.prop-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.prop-badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  border: 1px solid #2e2e48;
+  background: #12121c;
+}
+.prop-badge.common { border-color: #666; color: #999; }
+.prop-badge.uncommon { border-color: #56d18a; color: #56d18a; }
+.prop-badge.rare { border-color: #38bdf8; color: #38bdf8; }
+.prop-badge.epic { border-color: #a78bfa; color: #a78bfa; }
+.prop-badge.anomaly { border-color: #f59e0b; color: #f59e0b; }
+.prop-badge.mythic { border-color: #e2685f; color: #e2685f; }
+
+.score {
+  font-size: 14px;
+  color: #9a9ab0;
+  margin-bottom: 15px;
+}
+.score span { color: #7c5cff; font-weight: bold; }
+
+.history {
+  width: 100%;
+  max-width: 600px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #2e2e48;
+  border-radius: 8px;
+  padding: 10px;
+  background: #12121c;
+}
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid #1a1a2e;
+  font-size: 13px;
+}
+.history-item:last-child { border-bottom: none; }
+.history-num { color: #fff; font-weight: bold; }
+.history-rarity { font-size: 11px; }
+
+.empty { color: #666; text-align: center; padding: 20px; }
+
+.rarity-trash { background: #1a1a1a; color: #666; }
+.rarity-common { background: #1a1a2e; color: #999; }
+.rarity-uncommon { background: #0a2a1a; color: #56d18a; }
+.rarity-rare { background: #0a1a2a; color: #38bdf8; }
+.rarity-epic { background: #1a0a2a; color: #a78bfa; }
+.rarity-anomaly { background: #2a1a0a; color: #f59e0b; }
+.rarity-mythic { background: #2a0a0a; color: #e2685f; }
+</style>
+</head>
+<body>
+<h1>ARTHIMITISM RNG</h1>
+<p class="subtitle">roll a number, discover its properties, earn entropy points</p>
+
+<div class="number-display" id="numberDisplay">---</div>
+<div class="rarity rarity-common" id="rarityDisplay">ROLL TO START</div>
+
+<button class="roll-btn" id="rollBtn" onclick="roll()">ROLL</button>
+
+<div class="score">total ep: <span id="totalEP">0</span> | rolls: <span id="rollCount">0</span> | best: <span id="bestEP">0</span></div>
+
+<div class="properties" id="properties"></div>
+
+<div class="history" id="history">
+  <div class="empty">no rolls yet</div>
+</div>
+
+<script>
+// ===== NUMBER PROPERTY CHECKERS =====
+
+function isPrime(n) {
+  if (n < 2) return false;
+  if (n === 2) return true;
+  if (n % 2 === 0) return false;
+  for (let i = 3; i * i <= n; i += 2) {
+    if (n % i === 0) return false;
+  }
+  return true;
+}
+
+function isPalindrome(n) {
+  const s = String(n);
+  return s === s.split('').reverse().join('');
+}
+
+function isStrobogrammatic(n) {
+  const s = String(n);
+  const map = {'0':'0','1':'1','6':'9','8':'8','9':'6'};
+  let result = '';
+  for (let i = s.length - 1; i >= 0; i--) {
+    if (!map[s[i]]) return false;
+    result += map[s[i]];
+  }
+  return result === s;
+}
+
+function isTetradic(n) {
+  return isPalindrome(n) && isStrobogrammatic(n);
+}
+
+function isTwoFaced(n) {
+  const s = String(n);
+  const rev = s.split('').reverse().join('');
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] === rev[i]) return false;
+  }
+  return true;
+}
+
+function isConstantlyAscending(n) {
+  const s = String(n);
+  for (let i = 1; i < s.length; i++) {
+    if (parseInt(s[i]) <= parseInt(s[i-1])) return false;
+  }
+  return s.length > 1;
+}
+
+function isConstantlyDescending(n) {
+  const s = String(n);
+  for (let i = 1; i < s.length; i++) {
+    if (parseInt(s[i]) >= parseInt(s[i-1])) return false;
+  }
+  return s.length > 1;
+}
+
+function hasRepeatedDigits(n) {
+  const s = String(n);
+  return new Set(s).size === 1 && s.length > 1;
+}
+
+function isTwinPrime(n) {
+  if (!isPrime(n)) return false;
+  return isPrime(n - 2) || isPrime(n + 2);
+}
+
+function isBalancedPrime(n) {
+  if (!isPrime(n)) return false;
+  // find previous and next primes
+  let prev = n - 1, next = n + 1;
+  while (!isPrime(prev)) prev--;
+  while (!isPrime(next)) next++;
+  return n === (prev + next) / 2;
+}
+
+function isEmirp(n) {
+  if (!isPrime(n)) return false;
+  const rev = parseInt(String(n).split('').reverse().join(''));
+  if (rev === n) return false;
+  return isPrime(rev);
+}
+
+function isMersennePrime(n) {
+  if (!isPrime(n)) return false;
+  // check if n+1 is a power of 2
+  let p = n + 1;
+  return (p & (p - 1)) === 0 && p > 1;
+}
+
+function isInterprime(n) {
+  if (isPrime(n)) return false;
+  let prev = n - 1, next = n + 1;
+  while (!isPrime(prev)) prev--;
+  while (!isPrime(next)) next++;
+  return n === (prev + next) / 2;
+}
+
+function isPolygonal(n) {
+  // triangular number check (most common polygonal)
+  // n = k*(k+1)/2 -> k = (sqrt(8n+1)-1)/2
+  const disc = 8 * n + 1;
+  const sqrt = Math.sqrt(disc);
+  if (sqrt !== Math.floor(sqrt)) return false;
+  return (sqrt - 1) % 2 === 0;
+}
+
+function isMemeNumber(n) {
+  const s = String(n);
+  const memes = ['69', '420', '1337', '80085', '42', '666', '13', '7', '404', '500', '21', '88', '99', '100', '101', '123', '321', '0', '1', '2', '3'];
+  return memes.includes(s) || s === '420' || s === '69' || s === '1337' || s === '80085';
+}
+
+// ===== BADGE DEFINITIONS =====
+// Each badge: { name, check, rarity, ep }
+const BADGES = [
+  { name: 'Prime', check: isPrime, rarity: 'uncommon', ep: 5 },
+  { name: 'Twin Prime', check: isTwinPrime, rarity: 'rare', ep: 15 },
+  { name: 'Balanced Prime', check: isBalancedPrime, rarity: 'epic', ep: 30 },
+  { name: 'Emirp', check: isEmirp, rarity: 'rare', ep: 15 },
+  { name: 'Mersenne Prime', check: isMersennePrime, rarity: 'mythic', ep: 100 },
+  { name: 'Interprime', check: isInterprime, rarity: 'uncommon', ep: 5 },
+  { name: 'Palindromic', check: isPalindrome, rarity: 'rare', ep: 10 },
+  { name: 'Strobogrammatic', check: isStrobogrammatic, rarity: 'epic', ep: 25 },
+  { name: 'Tetradic', check: isTetradic, rarity: 'mythic', ep: 50 },
+  { name: 'Two-faced', check: isTwoFaced, rarity: 'rare', ep: 10 },
+  { name: 'Constantly Ascending', check: isConstantlyAscending, rarity: 'uncommon', ep: 8 },
+  { name: 'Constantly Descending', check: isConstantlyDescending, rarity: 'uncommon', ep: 8 },
+  { name: 'Repeated Digits', check: hasRepeatedDigits, rarity: 'uncommon', ep: 5 },
+  { name: 'Polygonal', check: isPolygonal, rarity: 'common', ep: 3 },
+  { name: 'Meme Number', check: isMemeNumber, rarity: 'rare', ep: 12 },
+];
+
+const RARITY_EP = { common: 1, uncommon: 3, rare: 8, epic: 20, anomaly: 50, mythic: 100 };
+const RARITY_ORDER = ['trash', 'common', 'uncommon', 'rare', 'epic', 'anomaly', 'mythic'];
+
+// ===== STATE =====
+let totalEP = 0, rollCount = 0, bestEP = 0, history = [];
+
+function roll() {
+  const btn = document.getElementById('rollBtn');
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  const num = Math.floor(Math.random() * 1000001);
+
+  // Analyze
+  const earned = [];
+  for (const badge of BADGES) {
+    if (badge.check(num)) earned.push(badge);
+  }
+
+  // Calculate EP
+  let ep = 0;
+  for (const b of earned) ep += b.ep;
+  // Bonus for number of properties
+  if (earned.length >= 3) ep += 5;
+  if (earned.length >= 5) ep += 10;
+
+  // Determine rarity tier based on EP
+  let rarity = 'trash';
+  if (ep >= 100) rarity = 'mythic';
+  else if (ep >= 50) rarity = 'anomaly';
+  else if (ep >= 25) rarity = 'epic';
+  else if (ep >= 12) rarity = 'rare';
+  else if (ep >= 5) rarity = 'uncommon';
+  else if (ep >= 1) rarity = 'common';
+
+  // Update state
+  totalEP += ep;
+  rollCount++;
+  if (ep > bestEP) bestEP = ep;
+  history.unshift({ num, ep, rarity, badges: earned.map(b => b.name) });
+  if (history.length > 50) history.pop();
+
+  // Display
+  document.getElementById('numberDisplay').textContent = num.toLocaleString();
+  const rarityEl = document.getElementById('rarityDisplay');
+  rarityEl.textContent = rarity.toUpperCase();
+  rarityEl.className = 'rarity rarity-' + rarity;
+
+  // Properties
+  const propDiv = document.getElementById('properties');
+  if (earned.length === 0) {
+    propDiv.innerHTML = '<div class="prop-section"><div class="prop-title">properties</div><div class="prop-list"><span class="prop-badge common">no special properties</span></div></div>';
+  } else {
+    let html = '<div class="prop-section"><div class="prop-title">properties (' + earned.length + ')</div><div class="prop-list">';
+    for (const b of earned) {
+      html += `<span class="prop-badge ${b.rarity}">${b.name} (+${b.ep} EP)</span>`;
+    }
+    html += '</div></div>';
+    propDiv.innerHTML = html;
+  }
+
+  // Score
+  document.getElementById('totalEP').textContent = totalEP.toLocaleString();
+  document.getElementById('rollCount').textContent = rollCount;
+  document.getElementById('bestEP').textContent = bestEP.toLocaleString();
+
+  // History
+  renderHistory();
+
+  btn.disabled = false;
+  btn.textContent = 'ROLL';
+}
+
+function renderHistory() {
+  const el = document.getElementById('history');
+  if (history.length === 0) { el.innerHTML = '<div class="empty">no rolls yet</div>'; return; }
+  let html = '';
+  for (const h of history.slice(0, 20)) {
+    html += `<div class="history-item"><span class="history-num">${h.num.toLocaleString()}</span><span class="history-rarity rarity-${h.rarity}">${h.rarity} +${h.ep} EP</span></div>`;
+  }
+  el.innerHTML = html;
+}
+
+// Keyboard shortcut
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' || e.key === 'Enter') {
+    e.preventDefault();
+    roll();
+  }
+});
+</script>
+</body>
+</html>
