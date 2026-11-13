@@ -5,7 +5,7 @@ A browser-based number analysis game. Roll a random number (0-1,000,000), discov
 ## Play
 
 - **GitHub Pages:** https://iluxz.github.io/arithmetism-rng/
-- **Cloudflare Pages:** (backup)
+- **Cloudflare Pages:** https://arithmetism-rng.cnnecare.workers.dev/
 
 ## Features
 
