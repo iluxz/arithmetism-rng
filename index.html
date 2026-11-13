@@ -27,17 +27,7 @@ h1 {
   font-size: 12px;
   margin-bottom: 30px;
 }
-.number-display {
-  font-size: 72px;
-  font-weight: bold;
-  color: #fff;
-  margin: 20px 0;
-  text-shadow: 0 0 20px rgba(124, 92, 255, 0.5);
-  min-height: 90px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+
 .rarity {
   font-size: 18px;
   font-weight: bold;
@@ -59,6 +49,34 @@ h1 {
   letter-spacing: 2px;
   transition: all 0.2s;
   margin-bottom: 30px;
+}
+.roll-btn.rolling {
+  animation: btnPulse 0.3s ease-in-out 3;
+}
+@keyframes btnPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); background: #9a7cff; }
+  100% { transform: scale(1); }
+}
+.number-display {
+  font-size: 72px;
+  font-weight: bold;
+  color: #fff;
+  margin: 20px 0;
+  text-shadow: 0 0 20px rgba(124, 92, 255, 0.5);
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s;
+}
+.number-display.rolling {
+  animation: numberRoll 0.6s ease-out;
+}
+@keyframes numberRoll {
+  0% { transform: scale(0.5) rotateX(90deg); opacity: 0; }
+  50% { transform: scale(1.2) rotateX(0deg); opacity: 1; }
+  100% { transform: scale(1) rotateX(0deg); opacity: 1; }
 }
 .roll-btn:hover { background: #6a4ce0; transform: scale(1.05); }
 .roll-btn:active { transform: scale(0.98); }
@@ -296,8 +314,17 @@ let totalEP = 0, rollCount = 0, bestEP = 0, history = [];
 
 function roll() {
   const btn = document.getElementById('rollBtn');
+  const disp = document.getElementById('numberDisplay');
   btn.disabled = true;
-  btn.textContent = '...';
+  btn.classList.add('rolling');
+  disp.classList.remove('rolling');
+  void disp.offsetWidth; // trigger reflow
+  disp.classList.add('rolling');
+
+  // brief delay for animation
+  setTimeout(() => {
+    btn.classList.remove('rolling');
+  }, 900);
 
   const num = Math.floor(Math.random() * 1000001);
 
@@ -359,6 +386,7 @@ function roll() {
 
   btn.disabled = false;
   btn.textContent = 'ROLL';
+  setTimeout(() => { disp.classList.remove('rolling'); }, 600);
 }
 
 function renderHistory() {
