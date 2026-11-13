@@ -139,14 +139,14 @@ h1 {
 </head>
 <body>
 <h1>ARTHIMITISM RNG</h1>
-<p class="subtitle">roll a number, discover its properties, earn entropy points</p>
+<p class="subtitle">roll a number, discover its properties, earn insight points</p>
 
 <div class="number-display" id="numberDisplay">---</div>
 <div class="rarity rarity-common" id="rarityDisplay">ROLL TO START</div>
 
 <button class="roll-btn" id="rollBtn" onclick="roll()">ROLL</button>
 
-<div class="score">total ep: <span id="totalEP">0</span> | rolls: <span id="rollCount">0</span> | best: <span id="bestEP">0</span></div>
+<div class="score">total ip: <span id="totalEP">0</span> | rolls: <span id="rollCount">0</span> | best: <span id="bestEP">0</span></div>
 
 <div class="properties" id="properties"></div>
 
@@ -314,7 +314,7 @@ function roll() {
   if (earned.length >= 3) ep += 5;
   if (earned.length >= 5) ep += 10;
 
-  // Determine rarity tier based on EP
+  // Determine rarity tier based on IP
   let rarity = 'trash';
   if (ep >= 100) rarity = 'mythic';
   else if (ep >= 50) rarity = 'anomaly';
@@ -343,7 +343,7 @@ function roll() {
   } else {
     let html = '<div class="prop-section"><div class="prop-title">properties (' + earned.length + ')</div><div class="prop-list">';
     for (const b of earned) {
-      html += `<span class="prop-badge ${b.rarity}">${b.name} (+${b.ep} EP)</span>`;
+      html += `<span class="prop-badge ${b.rarity}">${b.name} (+${b.ep} IP)</span>`;
     }
     html += '</div></div>';
     propDiv.innerHTML = html;
@@ -366,7 +366,7 @@ function renderHistory() {
   if (history.length === 0) { el.innerHTML = '<div class="empty">no rolls yet</div>'; return; }
   let html = '';
   for (const h of history.slice(0, 20)) {
-    html += `<div class="history-item"><span class="history-num">${h.num.toLocaleString()}</span><span class="history-rarity rarity-${h.rarity}">${h.rarity} +${h.ep} EP</span></div>`;
+    html += `<div class="history-item"><span class="history-num">${h.num.toLocaleString()}</span><span class="history-rarity rarity-${h.rarity}">${h.rarity} +${h.ep} IP</span></div>`;
   }
   el.innerHTML = html;
 }
